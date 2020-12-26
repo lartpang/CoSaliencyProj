@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import ast
 import importlib.util as importlibtools
 import inspect
@@ -10,14 +11,24 @@ import cv2
 import numpy as np
 import torch
 from torch import nn
-from torch.optim import AdamW, lr_scheduler, SGD
+from torch.optim import SGD, AdamW, lr_scheduler
 from torchvision.utils import make_grid
 
 from utils.misc import check_if_file_exists, construct_print
 
 
-def save_checkpoint(exp_name, model, current_epoch, full_net_path, state_net_path, optimizer, scheduler,
-                    total_epoch=-1, save_num_models=1, scaler=None):
+def save_checkpoint(
+    exp_name,
+    model,
+    current_epoch,
+    full_net_path,
+    state_net_path,
+    optimizer,
+    scheduler,
+    total_epoch=-1,
+    save_num_models=1,
+    scaler=None,
+):
     """
     保存完整参数模型（大）和状态参数模型（小）
 
@@ -45,8 +56,9 @@ def save_checkpoint(exp_name, model, current_epoch, full_net_path, state_net_pat
     torch.save(model.state_dict(), state_net_path)
 
 
-def resume_checkpoint(exp_name, load_path, model, optimizer=None, scheduler=None, scaler=None, mode="all",
-                      force_load=False):
+def resume_checkpoint(
+    exp_name, load_path, model, optimizer=None, scheduler=None, scaler=None, mode="all", force_load=False
+):
     """
     从保存节点恢复模型
 
@@ -70,7 +82,7 @@ def resume_checkpoint(exp_name, load_path, model, optimizer=None, scheduler=None
             model.load_state_dict(checkpoint["net_state"])
             optimizer.load_state_dict(checkpoint["opti_state"])
             scheduler.load_state_dict(checkpoint["sche_state"])
-            if scaler and checkpoint.get('scaler', None) is not None:
+            if scaler and checkpoint.get("scaler", None) is not None:
                 scaler.load_state_dict(checkpoint["scaler"])
             construct_print(f"Loaded '{load_path}' " f"(epoch {checkpoint['epoch']})")
         else:
@@ -95,10 +107,8 @@ def _moving_average_weight(model, state_path_list, alpha, reverse=False):
             final_state = temp_state
         else:
             for k, v in temp_state.items():
-                final_state[k] = final_state.get(k, 0) * (1 - alpha) + \
-                                 v * alpha
-    final_state_net_path = sorted_path_list[0][:-4] + \
-                           f"_avg_{len(sorted_path_list)}.pth"
+                final_state[k] = final_state.get(k, 0) * (1 - alpha) + v * alpha
+    final_state_net_path = sorted_path_list[0][:-4] + f"_avg_{len(sorted_path_list)}.pth"
     torch.save(final_state, final_state_net_path)
     model.load_state_dict(final_state)
 
@@ -116,8 +126,7 @@ def _directly_average_weight(model, state_path_list):
             for k, v in temp_state.items():
                 weighted_params = (final_state.get(k, 0) * i) + v
                 final_state[k] = weighted_params / float(i + 1)
-    final_state_net_path = sorted_path_list[0][:-4] + \
-                           f"_avg_{len(sorted_path_list)}.pth"
+    final_state_net_path = sorted_path_list[0][:-4] + f"_avg_{len(sorted_path_list)}.pth"
     torch.save(final_state, final_state_net_path)
     model.load_state_dict(final_state)
 
@@ -126,10 +135,9 @@ def average_weight(model, state_path_list, method, alpha, reverse=False):
     assert 0 < alpha <= 1
 
     def _moving(prev_state, curr_state, **kwargs):
-        alpha = kwargs.get('alpha', 1)
+        alpha = kwargs.get("alpha", 1)
         for name, param in curr_state.items():
-            prev_state[name] = prev_state.get(name, 0) * (1 - alpha) + \
-                               param * alpha
+            prev_state[name] = prev_state.get(name, 0) * (1 - alpha) + param * alpha
         return prev_state
 
     def _derectly(prev_state, curr_state, **kwargs):
@@ -138,10 +146,7 @@ def average_weight(model, state_path_list, method, alpha, reverse=False):
             prev_state[name] = add_prev_param / float(i + 1)
         return prev_state
 
-    avg_funcs = dict(
-        moving=_moving,
-        derectly=_derectly
-    )
+    avg_funcs = dict(moving=_moving, derectly=_derectly)
 
     sorted_path_list = sorted(state_path_list, reverse=reverse)
 
@@ -153,11 +158,8 @@ def average_weight(model, state_path_list, method, alpha, reverse=False):
         if i == 0:
             final_state = temp_state
         else:
-            avg_funcs[method](prev_state=final_state,
-                              curr_state=temp_state,
-                              alpha=alpha)
-    final_state_net_path = os.path.dirname(sorted_path_list[0]) + \
-                           f"avg_{len(sorted_path_list)}.pth"
+            avg_funcs[method](prev_state=final_state, curr_state=temp_state, alpha=alpha)
+    final_state_net_path = os.path.dirname(sorted_path_list[0]) + f"avg_{len(sorted_path_list)}.pth"
     torch.save(final_state, final_state_net_path)
     model.load_state_dict(final_state)
 
@@ -191,9 +193,8 @@ def _get_lr_coefficient(curr_epoch, total_num, lr_strategy, scheduler_cfg):
             # turning_epoch,...,end_epoch
             curr_epoch -= turning_epoch - 1
             total_num -= turning_epoch - 1
-            coefficient = np.power((1 - float(curr_epoch) / total_num),
-                                   scheduler_cfg["lr_decay"])
-        if min_coef := scheduler_cfg.get('min_coef'):
+            coefficient = np.power((1 - float(curr_epoch) / total_num), scheduler_cfg["lr_decay"])
+        if min_coef := scheduler_cfg.get("min_coef"):
             coefficient = max(min_coef, coefficient)
     elif lr_strategy == "cos":
         # \eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 +
@@ -207,10 +208,9 @@ def _get_lr_coefficient(curr_epoch, total_num, lr_strategy, scheduler_cfg):
             # turning_epoch,...,end_epoch
             curr_epoch -= turning_epoch - 1
             total_num -= turning_epoch - 1
-            min_coef = scheduler_cfg['min_coef']
-            max_coef = scheduler_cfg['max_coef']
-            coefficient = min_coef + (max_coef - min_coef) * \
-                          (1 + np.cos(np.pi * curr_epoch / total_num)) / 2
+            min_coef = scheduler_cfg["min_coef"]
+            max_coef = scheduler_cfg["max_coef"]
+            coefficient = min_coef + (max_coef - min_coef) * (1 + np.cos(np.pi * curr_epoch / total_num)) / 2
     elif lr_strategy == "linearonclr":
         coefficient = 1 - np.abs((curr_epoch + 1) / (total_num + 1) * 2 - 1)
     else:
@@ -221,7 +221,7 @@ def _get_lr_coefficient(curr_epoch, total_num, lr_strategy, scheduler_cfg):
 
 def make_scheduler_with_cfg(optimizer, total_num, scheduler_cfg: dict):
     lr_strategy = scheduler_cfg["lr_strategy"]
-    chosen_scheduler_cfg = scheduler_cfg['scheduler_candidates'][lr_strategy]
+    chosen_scheduler_cfg = scheduler_cfg["scheduler_candidates"][lr_strategy]
     if lr_strategy == "clr":
         # # cycle_id表示当前处于第几个cycle中，这里的cycle_id从1开始计数
         # # 这里的step_size表示半个cycle对应的迭代次数
@@ -236,42 +236,33 @@ def make_scheduler_with_cfg(optimizer, total_num, scheduler_cfg: dict):
             step_size_up=chosen_scheduler_cfg["step_size"],
             scale_mode=chosen_scheduler_cfg["mode"],
         )
-    elif lr_strategy == 'step':
+    elif lr_strategy == "step":
         scheduler = lr_scheduler.MultiStepLR(
-            optimizer=optimizer,
-            milestones=chosen_scheduler_cfg['milestones'],
-            gamma=chosen_scheduler_cfg['gamma']
+            optimizer=optimizer, milestones=chosen_scheduler_cfg["milestones"], gamma=chosen_scheduler_cfg["gamma"]
         )
     else:
-        lr_func = partial(_get_lr_coefficient,
-                          total_num=total_num,
-                          lr_strategy=lr_strategy,
-                          scheduler_cfg=chosen_scheduler_cfg)
+        lr_func = partial(
+            _get_lr_coefficient, total_num=total_num, lr_strategy=lr_strategy, scheduler_cfg=chosen_scheduler_cfg
+        )
         scheduler = lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lr_func)
     return scheduler
 
 
 def make_optim_with_cfg(model: nn.Module, optimizer_cfg: dict):
-    lr = optimizer_cfg['lr']
-    optimizer_strategy = optimizer_cfg['strategy']
+    lr = optimizer_cfg["lr"]
+    optimizer_strategy = optimizer_cfg["strategy"]
     optimizer_type = optimizer_cfg["optimizer"]
-    chosen_optimizer_cfg = optimizer_cfg['optimizer_candidates'][optimizer_type]
+    chosen_optimizer_cfg = optimizer_cfg["optimizer_candidates"][optimizer_type]
 
     if optimizer_strategy == "trick":
         # https://github.com/implus/PytorchInsight/blob/master
         # /classification/imagenet_tricks.py
         grouped_params = [
             {
-                "params": [
-                    p for name, p in model.named_parameters()
-                    if ("bias" in name or "bn" in name)
-                ],
+                "params": [p for name, p in model.named_parameters() if ("bias" in name or "bn" in name)],
                 "weight_decay": 0,
             },
-            {
-                "params": [p for name, p in model.named_parameters()
-                           if ("bias" not in name and "bn" not in name)]
-            },
+            {"params": [p for name, p in model.named_parameters() if ("bias" not in name and "bn" not in name)]},
         ]
     elif optimizer_strategy == "r3":
         grouped_params = [
@@ -279,19 +270,13 @@ def make_optim_with_cfg(model: nn.Module, optimizer_cfg: dict):
             # 层的参数（包括weight和bias）做约束（L2正则化会使得网络层的参数更加平滑）达
             # 到减少模型过拟合的效果。
             {
-                "params": [
-                    param for name, param in model.named_parameters()
-                    if name[-4:] == "bias"
-                ],
+                "params": [param for name, param in model.named_parameters() if name[-4:] == "bias"],
                 "lr": 2 * lr,
             },
             {
-                "params": [
-                    param for name, param in model.named_parameters()
-                    if name[-4:] != "bias"
-                ],
+                "params": [param for name, param in model.named_parameters() if name[-4:] != "bias"],
                 "lr": lr,
-                "weight_decay": chosen_optimizer_cfg['weight_decay'],
+                "weight_decay": chosen_optimizer_cfg["weight_decay"],
             },
         ]
     elif optimizer_strategy == "all":
@@ -300,11 +285,11 @@ def make_optim_with_cfg(model: nn.Module, optimizer_cfg: dict):
         params_groups = model.get_grouped_params()
         if params_groups is not None:
             grouped_params = [
-                {"params": params_groups['pretrained'], "lr": 0.1 * lr},
-                {"params": params_groups['retrained'], "lr": lr},
+                {"params": params_groups["pretrained"], "lr": 0.1 * lr},
+                {"params": params_groups["retrained"], "lr": lr},
             ]
         else:
-            grouped_params = [{"params": model.parameters(), 'lr': 0.1 * lr}]
+            grouped_params = [{"params": model.parameters(), "lr": 0.1 * lr}]
     # f3 可以使用funetune实现，即在model.get_grouped_params()中自定义分组
     # elif optimizer_strategy == "f3":
     #     backbone, head = [], []
@@ -322,17 +307,16 @@ def make_optim_with_cfg(model: nn.Module, optimizer_cfg: dict):
     else:
         raise NotImplementedError
 
-    if optimizer_type == 'sgd':
-        optimizer = SGD(params=grouped_params,
-                        lr=lr,
-                        momentum=chosen_optimizer_cfg['momentum'],
-                        weight_decay=chosen_optimizer_cfg['weight_decay'],
-                        nesterov=chosen_optimizer_cfg['nesterov'])
-    elif optimizer_type == 'adamw':
-        optimizer = AdamW(params=grouped_params,
-                          lr=lr,
-                          weight_decay=chosen_optimizer_cfg['weight_decay'],
-                          eps=1e-8)
+    if optimizer_type == "sgd":
+        optimizer = SGD(
+            params=grouped_params,
+            lr=lr,
+            momentum=chosen_optimizer_cfg["momentum"],
+            weight_decay=chosen_optimizer_cfg["weight_decay"],
+            nesterov=chosen_optimizer_cfg["nesterov"],
+        )
+    elif optimizer_type == "adamw":
+        optimizer = AdamW(params=grouped_params, lr=lr, weight_decay=chosen_optimizer_cfg["weight_decay"], eps=1e-8)
     else:
         raise NotImplementedError
     return optimizer
@@ -342,14 +326,11 @@ def _normalize(data_array: np.ndarray) -> np.ndarray:
     max_pred_array = data_array.max()
     min_pred_array = data_array.min()
     if max_pred_array != min_pred_array:
-        data_array = (data_array - min_pred_array) / \
-                     (max_pred_array - min_pred_array)
+        data_array = (data_array - min_pred_array) / (max_pred_array - min_pred_array)
     return data_array
 
 
-def clip_to_normalize(
-        data_array: np.ndarray, clip_range: tuple = None
-) -> np.ndarray:
+def clip_to_normalize(data_array: np.ndarray, clip_range: tuple = None) -> np.ndarray:
     clip_range = sorted(clip_range)
     if len(clip_range) == 3:
         clip_min, clip_mid, clip_max = clip_range
@@ -364,8 +345,7 @@ def clip_to_normalize(
         if higher_array.size > 0:
             higher_array = np.clip(higher_array, a_min=0, a_max=clip_max)
             min_lower = higher_array.min()
-            higher_array = _normalize(higher_array) * (
-                    1 - min_lower) + min_lower
+            higher_array = _normalize(higher_array) * (1 - min_lower) + min_lower
             data_array[data_array > clip_mid] = higher_array
     elif len(clip_range) == 2:
         clip_min, clip_max = clip_range
@@ -380,8 +360,7 @@ def clip_to_normalize(
     return data_array
 
 
-def save_array_as_image(data_array: np.ndarray, save_name: str,
-                        save_dir: str):
+def save_array_as_image(data_array: np.ndarray, save_name: str, save_dir: str):
     """
     save the ndarray as a image
 
@@ -402,48 +381,44 @@ def save_array_as_image(data_array: np.ndarray, save_name: str,
 
 def extract_config(config_pth):
     def _validate_py_syntax(file_path):
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
         try:
             ast.parse(content)
         except SyntaxError as e:
-            raise SyntaxError('There are syntax errors in config '
-                              f'file {file_path}: {e}')
+            raise SyntaxError("There are syntax errors in config " f"file {file_path}: {e}")
 
     full_file_path = os.path.abspath(os.path.expanduser(config_pth))
     check_if_file_exists(full_file_path)
     file_path_wo_ext, file_ext = os.path.splitext(full_file_path)
-    if file_ext not in ['.py', '.yml', '.yaml', '.json']:
-        raise IOError(f'do not support the ext `{file_ext}`')
+    if file_ext not in [".py", ".yml", ".yaml", ".json"]:
+        raise IOError(f"do not support the ext `{file_ext}`")
 
-    if file_ext == '.py':
+    if file_ext == ".py":
         # https://docs.python.org/3/library/importlib.html#importing-a
         # -source-file-directly
         _validate_py_syntax(full_file_path)
         temp_module_name = os.path.basename(file_path_wo_ext)
-        module_spec = importlibtools.spec_from_file_location(
-            name=temp_module_name, location=full_file_path
-        )
+        module_spec = importlibtools.spec_from_file_location(name=temp_module_name, location=full_file_path)
         temp_module = importlibtools.module_from_spec(module_spec)
         sys.modules[temp_module_name] = temp_module
         module_spec.loader.exec_module(temp_module)
         cfg_dict = {
             name: value
             for name, value in temp_module.__dict__.items()
-            if not name.startswith('__') and
-               not inspect.isclass(value) and
-               not inspect.ismodule(value)
+            if not name.startswith("__") and not inspect.isclass(value) and not inspect.ismodule(value)
         }
         # delete imported temp_module
         del sys.modules[temp_module_name]
-    elif file_ext in ['.yml', '.yaml', '.json']:
+    elif file_ext in [".yml", ".yaml", ".json"]:
         import mmcv
+
         cfg_dict = mmcv.load(full_file_path)
 
     return cfg_dict
 
 
-def cal_sparse_coef(curr_iter, num_iter, method='linear', extra_args=None):
+def cal_sparse_coef(curr_iter, num_iter, method="linear", extra_args=None):
     if extra_args is None:
         extra_args = {}
 
@@ -455,8 +430,7 @@ def cal_sparse_coef(curr_iter, num_iter, method='linear', extra_args=None):
         elif curr_iter > (num_iter * max_point):
             coef = max_coef
         else:
-            ratio = (max_coef - min_coef) / \
-                    (num_iter * (max_point - min_point))
+            ratio = (max_coef - min_coef) / (num_iter * (max_point - min_point))
             coef = ratio * (curr_iter - num_iter * min_point)
         return coef
 
@@ -479,7 +453,7 @@ def cal_sparse_coef(curr_iter, num_iter, method='linear', extra_args=None):
     return coef
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # schedule_config = dict(
     #     sche_usebatch=False,
     #     clr=dict(
@@ -511,5 +485,5 @@ if __name__ == '__main__':
     #     print(f"{inter_lr:.7f}", end=', ')
     # plt.scatter(np.arange(0, total_num), lr_array, s=1)
     # plt.show()
-    config = extract_config('/home/lart/Coding/CODProj/config.py')
+    config = extract_config("/home/lart/Coding/CODProj/config.py")
     pprint(config)

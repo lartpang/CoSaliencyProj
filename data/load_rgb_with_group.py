@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import random
 import sys
@@ -10,7 +11,7 @@ import torch
 from torch.nn import functional as F
 from torch.utils import data
 
-sys.path.append('..')
+sys.path.append("..")
 from configs import cosod_path
 from data.utils import DataLoaderX, read_binary_array, read_color_array
 from utils.misc import construct_print, set_seed_for_lib
@@ -258,16 +259,16 @@ def _customized_collate_fn(batch, scales):
 
 
 def create_loader(
-        data_path,
-        in_size,
-        batch_size,
-        num_workers=4,
-        base_seed=0,
-        training=False,
-        shuffle=False,
-        use_mstrain=False,
-        get_length=False,
-        pin_memory=True,
+    data_path,
+    in_size,
+    batch_size,
+    num_workers=4,
+    base_seed=0,
+    training=False,
+    shuffle=False,
+    use_mstrain=False,
+    get_length=False,
+    pin_memory=True,
 ):
     if training:
         dataset_obj = TrainDataset(root=data_path, in_size=in_size)
@@ -297,10 +298,11 @@ def create_loader(
     return loader
 
 
-if __name__ == '__main__':
-    dataset = TrainDataset(root=[('dsa', cosod_path.COCO9213)], in_size=dict(h=384, w=384, extra_scales=[0.5, 1.5]))
-    cosal_sampler = CoSAL_Sampler(idxes=dataset.indexes, shuffle=False, batch_size=None, drop_last=True,
-                                  fill_batch=True)
+if __name__ == "__main__":
+    dataset = TrainDataset(root=[("dsa", cosod_path.COCO9213)], in_size=dict(h=384, w=384, extra_scales=[0.5, 1.5]))
+    cosal_sampler = CoSAL_Sampler(
+        idxes=dataset.indexes, shuffle=False, batch_size=None, drop_last=True, fill_batch=True
+    )
     loader = DataLoaderX(
         dataset=dataset,
         # collate_fn=partial(_customized_collate_fn, scales=dataset.scales),
@@ -311,6 +313,6 @@ if __name__ == '__main__':
     )
     print(cosal_sampler.batches_idxes)
     for i, batch in enumerate(loader):
-        print(batch['image'].shape)
+        print(batch["image"].shape)
         if i == 10:
             break

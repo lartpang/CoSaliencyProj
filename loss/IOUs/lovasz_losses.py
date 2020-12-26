@@ -8,12 +8,12 @@ Lovasz-Softmax and Jaccard hinge loss in PyTorch
 Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
 """
 
-from __future__ import print_function, division
+from __future__ import division, print_function
 
-import torch
-from torch.autograd import Variable
-import torch.nn.functional as F
 import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 try:
     from itertools import ifilterfalse
@@ -66,9 +66,7 @@ def iou(preds, labels, C, EMPTY=1.0, ignore=None, per_image=False):
     for pred, label in zip(preds, labels):
         iou = []
         for i in range(C):
-            if (
-                i != ignore
-            ):  # The ignored label is sometimes among predicted classes (ENet - CityScapes)
+            if i != ignore:  # The ignored label is sometimes among predicted classes (ENet - CityScapes)
                 intersection = ((label == i) & (pred == i)).sum()
                 union = ((label == i) | ((pred == i) & (label != ignore))).sum()
                 if not union:
@@ -173,9 +171,7 @@ def lovasz_softmax(probas, labels, classes="present", per_image=False, ignore=No
     """
     if per_image:
         loss = mean(
-            lovasz_softmax_flat(
-                *flatten_probas(prob.unsqueeze(0), lab.unsqueeze(0), ignore), classes=classes
-            )
+            lovasz_softmax_flat(*flatten_probas(prob.unsqueeze(0), lab.unsqueeze(0), ignore), classes=classes)
             for prob, lab in zip(probas, labels)
         )
     else:

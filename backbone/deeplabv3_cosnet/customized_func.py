@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch.nn as nn
 
 
@@ -13,9 +14,7 @@ def load_pretrained_params(model: nn.Module, pretrained_dict: dict):
         }
     else:
         pretrained_dict = {
-            k: v
-            for k, v in pretrained_dict.items()
-            if (k in model_dict) and (v.size() == model_dict[k].size())
+            k: v for k, v in pretrained_dict.items() if (k in model_dict) and (v.size() == model_dict[k].size())
         }
     print(
         "the number of public keys: ",

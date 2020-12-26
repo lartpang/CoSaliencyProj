@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from datetime import datetime
 from pprint import pprint
@@ -20,12 +21,7 @@ from utils.misc import (
     pre_mkdir,
 )
 from utils.recorder import AvgMeter, CustomizedTimer, TBRecorder
-from utils.tools_funcs import (
-    make_optim_with_cfg,
-    make_scheduler_with_cfg,
-    resume_checkpoint,
-    save_checkpoint,
-)
+from utils.tools_funcs import make_optim_with_cfg, make_scheduler_with_cfg, resume_checkpoint, save_checkpoint
 
 _DEVICES = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

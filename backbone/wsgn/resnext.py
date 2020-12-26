@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 
 """
@@ -8,7 +9,9 @@ arXiv preprint arXiv:1611.05431.
 import from https://github.com/facebookresearch/ResNeXt/blob/master/models/resnext.lua
 """
 import math
+
 import torch.nn as nn
+
 from backbone.wsgn import customized_func as L
 
 __all__ = ["l_resnext50", "l_resnext101"]
@@ -27,7 +30,7 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, inplanes, planes, baseWidth, cardinality, stride=1, downsample=None):
-        """ Constructor
+        """Constructor
         Args:
             inplanes: input channel dimensionality
             planes: output channel dimensionality
@@ -42,9 +45,7 @@ class Bottleneck(nn.Module):
 
         self.conv1 = L.Conv2d(inplanes, D * C, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn1 = L.BatchNorm2d(D * C)
-        self.conv2 = L.Conv2d(
-            D * C, D * C, kernel_size=3, stride=stride, padding=1, groups=C, bias=False
-        )
+        self.conv2 = L.Conv2d(D * C, D * C, kernel_size=3, stride=stride, padding=1, groups=C, bias=False)
         self.bn2 = L.BatchNorm2d(D * C)
         self.conv3 = L.Conv2d(D * C, planes * 4, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn3 = L.BatchNorm2d(planes * 4)
@@ -82,7 +83,7 @@ class ResNeXt(nn.Module):
     """
 
     def __init__(self, baseWidth, cardinality, layers, num_classes):
-        """ Constructor
+        """Constructor
         Args:
             baseWidth: baseWidth for ResNeXt.
             cardinality: number of convolution groups.
@@ -118,7 +119,7 @@ class ResNeXt(nn.Module):
                 m.bias.data.zero_()
 
     def _make_layer(self, block, planes, blocks, stride=1):
-        """ Stack n bottleneck modules where n is inferred from the depth of the network.
+        """Stack n bottleneck modules where n is inferred from the depth of the network.
         Args:
             block: block type used to construct ResNext
             planes: number of output channels (need to multiply by block.expansion)
@@ -140,9 +141,7 @@ class ResNeXt(nn.Module):
             )
 
         layers = []
-        layers.append(
-            block(self.inplanes, planes, self.baseWidth, self.cardinality, stride, downsample)
-        )
+        layers.append(block(self.inplanes, planes, self.baseWidth, self.cardinality, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, self.baseWidth, self.cardinality))

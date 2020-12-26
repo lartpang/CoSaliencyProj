@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import copy
 import json
 import os
@@ -13,9 +14,7 @@ import torch
 def prepare_for_running(user_cfg):
     initialize_seed_cudnn(
         seed=0,
-        use_cudnn_benchmark=False
-        if user_cfg.train_config.use_mstrain
-        else user_cfg.train_config.use_cudnn_benchmark,
+        use_cudnn_benchmark=False if user_cfg.train_config.use_mstrain else user_cfg.train_config.use_cudnn_benchmark,
     )
     pre_mkdir(path_config=user_cfg.path)
     pre_copy(
@@ -29,7 +28,7 @@ def set_seed_for_lib(seed):
     random.seed(seed)
     np.random.seed(seed)
     # 为了禁止hash随机化，使得实验可复现。
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     torch.manual_seed(seed)  # 为CPU设置随机种子
     torch.cuda.manual_seed(seed)  # 为当前GPU设置随机种子
     torch.cuda.manual_seed_all(seed)  # 为所有GPU设置随机种子
@@ -59,16 +58,14 @@ def pre_mkdir(path_config):
 
 
 def pre_copy(main_file_path, proj_root, all_config):
-    path_config = all_config['path']
-    with open(path_config["all_cfg"], encoding='utf-8', mode='w') as f:
+    path_config = all_config["path"]
+    with open(path_config["all_cfg"], encoding="utf-8", mode="w") as f:
         json.dump(all_config, f, indent=2)
     shutil.copy(f"{proj_root}/config.py", path_config["cfg_copy"])
     shutil.copy(main_file_path, path_config["trainer_copy"])
 
 
-def clip_normalize_scale(
-        array, clip_min=0, clip_max=250, new_min=0, new_max=255
-):
+def clip_normalize_scale(array, clip_min=0, clip_max=250, new_min=0, new_max=255):
     array = np.clip(array, a_min=clip_min, a_max=clip_max)
     array = (array - array.min()) / (array.max() - array.min())
     array = array * (new_max - new_min) + new_min
@@ -115,21 +112,11 @@ def construct_path(proj_root: str, exp_name: str) -> dict:
     final_full_model_path = os.path.join(pth_path, "checkpoint_final.pth")
     final_state_path = os.path.join(pth_path, "state_final.pth")
 
-    tr_log_path = os.path.join(
-        pth_log_path, f"tr_{str(datetime.now())[:10]}.txt"
-    )
-    te_log_path = os.path.join(
-        pth_log_path, f"te_{str(datetime.now())[:10]}.txt"
-    )
-    cfg_copy_path = os.path.join(
-        pth_log_path, f"cfg_{str(datetime.now())}.txt"
-    )
-    cfg_all_path = os.path.join(
-        pth_log_path, f"cfg_{str(datetime.now())}.json"
-    )
-    trainer_copy_path = os.path.join(
-        pth_log_path, f"trainer_{str(datetime.now())}.txt"
-    )
+    tr_log_path = os.path.join(pth_log_path, f"tr_{str(datetime.now())[:10]}.txt")
+    te_log_path = os.path.join(pth_log_path, f"te_{str(datetime.now())[:10]}.txt")
+    cfg_copy_path = os.path.join(pth_log_path, f"cfg_{str(datetime.now())}.txt")
+    cfg_all_path = os.path.join(pth_log_path, f"cfg_{str(datetime.now())}.json")
+    trainer_copy_path = os.path.join(pth_log_path, f"trainer_{str(datetime.now())}.txt")
 
     path_config = {
         "ckpt_path": ckpt_path,
@@ -151,40 +138,42 @@ def construct_path(proj_root: str, exp_name: str) -> dict:
 
 def construct_exp_name(arg_dict: dict, extra_dicts: list):
     # bs_16_lr_0.05_e30_noamp_2gpu_noms_352
-    focus_item = OrderedDict({
-        "in_size": 's',
-        "batch_size": "bs",
-        "epoch_num": "e",
-        "use_amp": "amp",
-        "lr": "lr",
-        "lr_strategy": "lt",
-        'optimizer': 'op',
-        "strategy": "ot",
-        "use_mstrain": "ms",
-        "info": "info",
-    })
+    focus_item = OrderedDict(
+        {
+            "in_size": "s",
+            "batch_size": "bs",
+            "epoch_num": "e",
+            "use_amp": "amp",
+            "lr": "lr",
+            "lr_strategy": "lt",
+            "optimizer": "op",
+            "strategy": "ot",
+            "use_mstrain": "ms",
+            "info": "info",
+        }
+    )
     copy_arg_dict = copy.deepcopy(arg_dict)
     copy_extra_dicts = copy.deepcopy(extra_dicts)
 
     exp_name = f"{copy_arg_dict['model']}"
     for k, v in focus_item.items():
-        if (item := copy_arg_dict.get(k, 'NotExist')) == 'NotExist':
+        if (item := copy_arg_dict.get(k, "NotExist")) == "NotExist":
             extra_dict = {}
             for temp_dict in copy_extra_dicts:
                 extra_dict.update(temp_dict)
-            if (item := extra_dict.get(k, 'NotExist')) == 'NotExist':
+            if (item := extra_dict.get(k, "NotExist")) == "NotExist":
                 raise ValueError(f"{item}: {k}")
 
-        if k == 'in_size' and isinstance(item, dict):
-            tr_item = item['tr']
-            if tr_item.get('hw', False):
-                item = tr_item['hw']
-            elif tr_item.get('h', False) and tr_item.get('w', False):
+        if k == "in_size" and isinstance(item, dict):
+            tr_item = item["tr"]
+            if tr_item.get("hw", False):
+                item = tr_item["hw"]
+            elif tr_item.get("h", False) and tr_item.get("w", False):
                 item = f"{tr_item['h']}X{tr_item['w']}"
             else:
                 raise ValueError
-        if k == 'batch_size' and isinstance(item, dict):
-            item = item['tr']
+        if k == "batch_size" and isinstance(item, dict):
+            item = item["tr"]
 
         if isinstance(item, bool):
             item = "Y" if item else "N"

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2020
 # @Author  : Lart Pang
-# @FileName: BaseOps.py
 # @GitHub  : https://github.com/lartpang
 
 import torch
@@ -18,22 +17,21 @@ def cus_sample(feat: torch.Tensor, **kwargs) -> torch.Tensor:
         "size",
         "scale_factor",
     ]
-    if size := kwargs.get('size', False):
+    if size := kwargs.get("size", False):
         if tuple(size) == feat.shape[2:]:
             return feat
-    if scale_factor := kwargs.get('scale_factor', False):
+    if scale_factor := kwargs.get("scale_factor", False):
         if scale_factor == 1:
             return feat
         if isinstance(scale_factor, float):
-            kwargs['recompute_scale_factor'] = False
+            kwargs["recompute_scale_factor"] = False
     return F.interpolate(feat, **kwargs, mode="bilinear", align_corners=False)
 
 
 def upsample_add(*xs: torch.Tensor) -> torch.Tensor:
     y = xs[-1]
     for x in xs[:-1]:
-        y = y + F.interpolate(x, size=y.size()[2:], mode="bilinear",
-                              align_corners=False)
+        y = y + F.interpolate(x, size=y.size()[2:], mode="bilinear", align_corners=False)
     return y
 
 
@@ -41,8 +39,7 @@ def upsample_cat(*xs):
     y = xs[-1]
     out = []
     for x in xs[:-1]:
-        out.append(F.interpolate(x, size=y.size()[2:], mode="bilinear",
-                                 align_corners=False))
+        out.append(F.interpolate(x, size=y.size()[2:], mode="bilinear", align_corners=False))
     return torch.cat([*out, y], dim=1)
 
 
@@ -122,8 +119,7 @@ def slide_inference(model, ori_data, win_size, overlap_ratio, model_kwargs):
     N, _, H, W = ori_data["curr_jpeg"].size()
     h_stride = int(h_crop * (1 - overlap_ratio))
     w_stride = int(w_crop * (1 - overlap_ratio))
-    assert h_crop <= H and w_crop <= W, (
-        'crop size should not greater than image size')
+    assert h_crop <= H and w_crop <= W, "crop size should not greater than image size"
 
     h_grids = max(H - h_crop + h_stride - 1, 0) // h_stride + 1
     w_grids = max(W - w_crop + w_stride - 1, 0) // w_stride + 1
@@ -140,13 +136,9 @@ def slide_inference(model, ori_data, win_size, overlap_ratio, model_kwargs):
             x1 = max(x2 - w_crop, 0)
             crop_jpegs = ori_data["curr_jpeg"][:, :, y1:y2, x1:x2]
             crop_flows = ori_data["curr_flow"][:, :, y1:y2, x1:x2]
-            model_output = model(curr_jpeg=crop_jpegs, curr_flow=crop_flows,
-                                 **model_kwargs)
-            crop_logits = model_output['curr_seg']
-            full_logits += F.pad(
-                crop_logits, [int(x1), int(W - x2), int(y1), int(H - y2)],
-                mode='constant', value=0
-            )
+            model_output = model(curr_jpeg=crop_jpegs, curr_flow=crop_flows, **model_kwargs)
+            crop_logits = model_output["curr_seg"]
+            full_logits += F.pad(crop_logits, [int(x1), int(W - x2), int(y1), int(H - y2)], mode="constant", value=0)
             count_mat[:, :, y1:y2, x1:x2] += 1
 
     assert (count_mat == 0).sum() == 0
@@ -158,8 +150,7 @@ class InputPadder:
     def get_pad_list(self, curr_shape, target_shape):
         curr_h, curr_w = curr_shape[-2:]
         target_h, target_w = target_shape[-2:]
-        assert target_h > curr_h and target_w > curr_w, (target_h, curr_h,
-                                                         target_w, curr_w)
+        assert target_h > curr_h and target_w > curr_w, (target_h, curr_h, target_w, curr_w)
         if target_h != curr_h or target_w != curr_w:
             pad_ht = target_h - curr_h
             pad_wd = target_w - curr_w
@@ -181,9 +172,8 @@ class InputPadder:
     def unpad_tensor(self, x):
         assert isinstance(x, torch.Tensor)
         ht, wd = x.shape[-2:]
-        c = [self._pad[2], ht - self._pad[3],
-             self._pad[0], wd - self._pad[1]]
-        return x[..., c[0]: c[1], c[2]: c[3]]
+        c = [self._pad[2], ht - self._pad[3], self._pad[0], wd - self._pad[1]]
+        return x[..., c[0] : c[1], c[2] : c[3]]
 
 
 if __name__ == "__main__":

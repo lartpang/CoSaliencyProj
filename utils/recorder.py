@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 # @Time    : 2020/7/4
 # @Author  : Lart Pang
 # @GitHub  : https://github.com/lartpang
+
 import functools
 from collections import defaultdict
 from datetime import datetime
@@ -9,7 +11,7 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
 
-from metrics.metrics import Emeasure, Fmeasure, MAE, Smeasure, WeightedFmeasure
+from metrics.metrics import MAE, Emeasure, Fmeasure, Smeasure, WeightedFmeasure
 from utils.misc import check_mkdir, construct_print
 
 
@@ -34,20 +36,20 @@ class MetricRecorder(object):
 
     def show(self, bit_num: int = 3) -> dict:
         fm_info = self.fm.get_results()
-        fm = fm_info['fm']
-        pr = fm_info['pr']
-        wfm = self.wfm.get_results()['wfm']
-        sm = self.sm.get_results()['sm']
-        em = self.em.get_results()['em']
-        mae = self.mae.get_results()['mae']
+        fm = fm_info["fm"]
+        pr = fm_info["pr"]
+        wfm = self.wfm.get_results()["wfm"]
+        sm = self.sm.get_results()["sm"]
+        em = self.em.get_results()["em"]
+        mae = self.mae.get_results()["mae"]
         results = {
-            'em': em['curve'],
-            'fm': fm['curve'],
-            'Sm': sm,
-            'wFm': wfm,
-            'MAE': mae,
-            'adpEm': em['adp'],
-            'adpFm': fm['adp']
+            "em": em["curve"],
+            "fm": fm["curve"],
+            "Sm": sm,
+            "wFm": wfm,
+            "MAE": mae,
+            "adpEm": em["adp"],
+            "adpFm": fm["adp"],
         }
         if isinstance(bit_num, int):
             results = {k: v.round(bit_num) for k, v in results.items()}
@@ -66,12 +68,12 @@ class GroupedMetricRecorder(object):
     def show(self, bit_num: int = 3) -> dict:
         group_metrics = {k: v.show(bit_num=None) for k, v in self.metric_recorders.items()}
         results = self.mean_group_metrics(group_metric_recorder=group_metrics)
-        results['meanFm'] = results['fm'].mean()
-        results['maxFm'] = results['fm'].max()
-        results['meanEm'] = results['em'].mean()
-        results['maxEm'] = results['em'].max()
-        del results['fm']
-        del results['em']
+        results["meanFm"] = results["fm"].mean()
+        results["maxFm"] = results["fm"].max()
+        results["meanEm"] = results["em"].mean()
+        results["maxEm"] = results["em"].max()
+        del results["fm"]
+        del results["em"]
         for k, v in results.items():
             temp_v = v.round(bit_num).tolist()
             if isinstance(temp_v, list):
@@ -100,9 +102,7 @@ class TBRecorder(object):
             self.tb.add_scalar(f"data/{name}", data, curr_iter)
         else:
             for idx, data_item in enumerate(data):
-                self.tb.add_scalar(
-                    f"data/{name}_{idx}", data_item[name], curr_iter
-                )
+                self.tb.add_scalar(f"data/{name}_{idx}", data_item[name], curr_iter)
 
     def record_image(self, name, data, curr_iter):
         data_grid = make_grid(data, nrow=data.size(0), padding=5)
@@ -150,9 +150,7 @@ def CustomizedTimer(cus_msg):
             start_time = datetime.now()
             construct_print(f"{cus_msg} start: {start_time}")
             results = func(*args, **kwargs)
-            construct_print(
-                f"the time of {cus_msg}: {datetime.now() - start_time}"
-            )
+            construct_print(f"the time of {cus_msg}: {datetime.now() - start_time}")
             return results
 
         return wrapper

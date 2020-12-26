@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 import torch
-import torchvision.models.vgg as V
-import torchvision.models.resnet as R
 import torch.nn as nn
+import torchvision.models.resnet as R
+import torchvision.models.vgg as V
 
 
 def Backbone_V16_Custumed(in_C):
@@ -9,9 +10,7 @@ def Backbone_V16_Custumed(in_C):
     if in_C == 3:
         div_1 = nn.Sequential(*list(net.children())[0][:6])
     else:
-        div_1 = nn.Sequential(
-            nn.Conv2d(in_C, 64, kernel_size=3, padding=1), *list(net.children())[0][1:6]
-        )
+        div_1 = nn.Sequential(nn.Conv2d(in_C, 64, kernel_size=3, padding=1), *list(net.children())[0][1:6])
     div_2 = nn.Sequential(*list(net.children())[0][6:13])
     div_4 = nn.Sequential(*list(net.children())[0][13:23])
     div_8 = nn.Sequential(*list(net.children())[0][23:33])

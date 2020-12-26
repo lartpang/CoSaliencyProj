@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 from torch import nn
 
-from backbone.wsgn.resnet import l_resnet101, l_resnet50
 from backbone.wsgn import customized_func as L
+from backbone.wsgn.resnet import l_resnet50, l_resnet101
 
 
 def Backbone_WSGNR50_Custumed(in_C):

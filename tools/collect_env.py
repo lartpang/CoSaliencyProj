@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This script outputs relevant system environment info
 # Run it with `python collect_env.py`.
 import locale

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # https://raw.githubusercontent.com/Jack-guo-xy/Python-IW-SSIM/master
 # /IW_SSIM_PyTorch.py
 import numpy as np
@@ -7,9 +8,10 @@ import torch.nn.functional as F
 from PIL import Image
 
 
-class IW_SSIM():
-    def __init__(self, iw_flag=True, Nsc=5, blSzX=3, blSzY=3, parent=True,
-                 sigma_nsq=0.4, use_cuda=True, use_double=False):
+class IW_SSIM:
+    def __init__(
+        self, iw_flag=True, Nsc=5, blSzX=3, blSzY=3, parent=True, sigma_nsq=0.4, use_cuda=True, use_double=False
+    ):
         # MS-SSIM parameters
         self.K = [0.01, 0.03]
         self.L = 255
@@ -37,15 +39,15 @@ class IW_SSIM():
             self.samplet = self.samplet.double()
         self.samplen = np.array([1.0])
         if not self.use_double:
-            self.samplen = self.samplen.astype('float32')
+            self.samplen = self.samplen.astype("float32")
 
     def fspecial(self, fltr, ws, **kwargs):
-        if fltr == 'uniform':
+        if fltr == "uniform":
             return np.ones((ws, ws)) / ws ** 2
 
-        elif fltr == 'gaussian':
-            x, y = np.mgrid[-ws // 2 + 1:ws // 2 + 1, -ws // 2 + 1:ws // 2 + 1]
-            g = np.exp(-((x ** 2 + y ** 2) / (2.0 * kwargs['sigma'] ** 2)))
+        elif fltr == "gaussian":
+            x, y = np.mgrid[-ws // 2 + 1 : ws // 2 + 1, -ws // 2 + 1 : ws // 2 + 1]
+            g = np.exp(-((x ** 2 + y ** 2) / (2.0 * kwargs["sigma"] ** 2)))
             g[g < np.finfo(g.dtype).eps * g.max()] = 0
             assert g.shape == (ws, ws)
             den = g.sum()
@@ -61,20 +63,19 @@ class IW_SSIM():
         lpo = pt.pyramids.LaplacianPyramid(imgo, height=5)
         lpd = pt.pyramids.LaplacianPyramid(imgd, height=5)
         for scale in range(1, self.Nsc + 1):
-            imgopr[scale] = torch.from_numpy(
-                lpo.pyr_coeffs[(scale - 1, 0)]).unsqueeze(0).unsqueeze(0).type(
-                self.samplet.type())
-            imgdpr[scale] = torch.from_numpy(
-                lpd.pyr_coeffs[(scale - 1, 0)]).unsqueeze(0).unsqueeze(0).type(
-                self.samplet.type())
+            imgopr[scale] = (
+                torch.from_numpy(lpo.pyr_coeffs[(scale - 1, 0)]).unsqueeze(0).unsqueeze(0).type(self.samplet.type())
+            )
+            imgdpr[scale] = (
+                torch.from_numpy(lpd.pyr_coeffs[(scale - 1, 0)]).unsqueeze(0).unsqueeze(0).type(self.samplet.type())
+            )
 
         return imgopr, imgdpr
 
     def scale_qualty_maps(self, imgopr, imgdpr):
 
-        ms_win = self.fspecial('gaussian', ws=self.winsize, sigma=self.sigma)
-        ms_win = torch.from_numpy(ms_win).unsqueeze(0).unsqueeze(0).type(
-            self.samplet.type())
+        ms_win = self.fspecial("gaussian", ws=self.winsize, sigma=self.sigma)
+        ms_win = torch.from_numpy(ms_win).unsqueeze(0).unsqueeze(0).type(self.samplet.type())
         C1 = (self.K[0] * self.L) ** 2
         C2 = (self.K[1] * self.L) ** 2
         cs_map = {}
@@ -86,12 +87,8 @@ class IW_SSIM():
             sigma12 = F.conv2d(imgo * imgd, ms_win) - mu1 * mu2
             sigma1_sq = F.conv2d(imgo ** 2, ms_win) - mu1 * mu1
             sigma2_sq = F.conv2d(imgd ** 2, ms_win) - mu2 * mu2
-            sigma1_sq = torch.max(
-                torch.zeros(sigma1_sq.shape).type(self.samplet.type()),
-                sigma1_sq)
-            sigma2_sq = torch.max(
-                torch.zeros(sigma2_sq.shape).type(self.samplet.type()),
-                sigma2_sq)
+            sigma1_sq = torch.max(torch.zeros(sigma1_sq.shape).type(self.samplet.type()), sigma1_sq)
+            sigma2_sq = torch.max(torch.zeros(sigma2_sq.shape).type(self.samplet.type()), sigma2_sq)
             cs_map[i] = (2 * sigma12 + C2) / (sigma1_sq + sigma2_sq + C2)
             if i == self.Nsc:
                 l_map = (2 * mu1 * mu2 + C1) / (mu1 ** 2 + mu2 ** 2 + C1)
@@ -106,11 +103,9 @@ class IW_SSIM():
 
     def imenlarge2(self, im):
         _, _, M, N = im.shape
-        t1 = F.interpolate(im, size=(int(4 * M - 3), int(4 * N - 3)),
-                           mode='bilinear', align_corners=False)
-        t2 = torch.zeros([1, 1, 4 * M - 1, 4 * N - 1]).type(
-            self.samplet.type())
-        t2[:, :, 1: -1, 1:-1] = t1
+        t1 = F.interpolate(im, size=(int(4 * M - 3), int(4 * N - 3)), mode="bilinear", align_corners=False)
+        t2 = torch.zeros([1, 1, 4 * M - 1, 4 * N - 1]).type(self.samplet.type())
+        t2[:, :, 1:-1, 1:-1] = t1
         t2[:, :, 0, :] = 2 * t2[:, :, 1, :] - t2[:, :, 2, :]
         t2[:, :, -1, :] = 2 * t2[:, :, -2, :] - t2[:, :, -3, :]
         t2[:, :, :, 0] = 2 * t2[:, :, :, 1] - t2[:, :, :, 2]
@@ -129,15 +124,13 @@ class IW_SSIM():
             imgd = imgdpr[scale]
             win = np.ones([self.blSzX, self.blSzY])
             win = win / np.sum(win)
-            win = torch.from_numpy(win).unsqueeze(0).unsqueeze(0).type(
-                self.samplet.type())
+            win = torch.from_numpy(win).unsqueeze(0).unsqueeze(0).type(self.samplet.type())
             padding = int((self.blSzX - 1) / 2)
 
             # Prepare for estimating IW-SSIM parameters
             mean_x = F.conv2d(imgo, win, padding=padding)
             mean_y = F.conv2d(imgd, win, padding=padding)
-            cov_xy = F.conv2d(imgo * imgd, win,
-                              padding=padding) - mean_x * mean_y
+            cov_xy = F.conv2d(imgo * imgd, win, padding=padding) - mean_x * mean_y
             ss_x = F.conv2d(imgo ** 2, win, padding=padding) - mean_x ** 2
             ss_y = F.conv2d(imgd ** 2, win, padding=padding) - mean_y ** 2
 
@@ -146,7 +139,7 @@ class IW_SSIM():
 
             # Estimate gain factor and error
             g = cov_xy / (ss_x + tol)
-            vv = (ss_y - g * cov_xy)
+            vv = ss_y - g * cov_xy
             g[ss_x < tol] = 0
             vv[ss_x < tol] = ss_y[ss_x < tol]
             ss_x[ss_x < tol] = 0
@@ -156,7 +149,7 @@ class IW_SSIM():
             # Prepare parent band
             aux = imgo
             _, _, Nsy, Nsx = aux.shape
-            prnt = (self.parent and scale < self.Nsc - 1)
+            prnt = self.parent and scale < self.Nsc - 1
             BL = torch.zeros([1, 1, aux.shape[2], aux.shape[3], 1 + prnt])
             if self.use_cuda:
                 BL = BL.cuda()
@@ -191,55 +184,54 @@ class IW_SSIM():
                     temp = imgo[0, 0, :, :, 0]
                     foo1 = self.roll(temp, ny, 0)
                     foo = self.roll(foo1, nx, 1)
-                    foo = foo[Ly: Ly + nblv, Lx: Lx + nblh]
+                    foo = foo[Ly : Ly + nblv, Lx : Lx + nblh]
                     Y[:, n] = foo.flatten()
             if prnt:
                 n = n + 1
                 temp = imgo[0, 0, :, :, 1]
                 foo = temp
-                foo = foo[Ly: Ly + nblv, Lx: Lx + nblh]
+                foo = foo[Ly : Ly + nblv, Lx : Lx + nblh]
                 Y[:, n] = foo.flatten()
 
-            C_u = torch.mm(torch.transpose(Y, 0, 1), Y) / nexp.type(
-                self.samplet.type())
+            C_u = torch.mm(torch.transpose(Y, 0, 1), Y) / nexp.type(self.samplet.type())
             eig_values, H = torch.eig(C_u, eigenvectors=True)
             eig_values = eig_values.type(self.samplet.type())
             H = H.type(self.samplet.type())
             if self.use_double:
-                L = torch.diag(eig_values[:, 0] * (
-                        eig_values[:, 0] > 0).double()) * torch.sum(
-                    eig_values) / ((torch.sum(
-                    eig_values[:, 0] * (eig_values[:, 0] > 0).double())) + (
-                                           torch.sum(eig_values[:, 0] * (
-                                                   eig_values[:,
-                                                   0] > 0).double())
-                                           == 0))
+                L = (
+                    torch.diag(eig_values[:, 0] * (eig_values[:, 0] > 0).double())
+                    * torch.sum(eig_values)
+                    / (
+                        (torch.sum(eig_values[:, 0] * (eig_values[:, 0] > 0).double()))
+                        + (torch.sum(eig_values[:, 0] * (eig_values[:, 0] > 0).double()) == 0)
+                    )
+                )
             else:
-                L = torch.diag(eig_values[:, 0] * (
-                        eig_values[:, 0] > 0).float()) * torch.sum(
-                    eig_values) / ((torch.sum(
-                    eig_values[:, 0] * (eig_values[:, 0] > 0).float())) + (
-                                           torch.sum(eig_values[:, 0] * (
-                                                   eig_values[:,
-                                                   0] > 0).float())
-                                           == 0))
+                L = (
+                    torch.diag(eig_values[:, 0] * (eig_values[:, 0] > 0).float())
+                    * torch.sum(eig_values)
+                    / (
+                        (torch.sum(eig_values[:, 0] * (eig_values[:, 0] > 0).float()))
+                        + (torch.sum(eig_values[:, 0] * (eig_values[:, 0] > 0).float()) == 0)
+                    )
+                )
             C_u = torch.mm(torch.mm(H, L), torch.transpose(H, 0, 1))
             C_u_inv = torch.inverse(C_u)
             ss = (torch.mm(Y, C_u_inv)) * Y / N.type(self.samplet.type())
             ss = torch.sum(ss, 1)
             ss = ss.view(nblv, nblh)
             ss = ss.unsqueeze(0).unsqueeze(0)
-            g = g[:, :, Ly: Ly + nblv, Lx: Lx + nblh]
-            vv = vv[:, :, Ly: Ly + nblv, Lx: Lx + nblh]
+            g = g[:, :, Ly : Ly + nblv, Lx : Lx + nblh]
+            vv = vv[:, :, Ly : Ly + nblv, Lx : Lx + nblh]
 
             # Calculate mutual information
             infow = torch.zeros(g.shape).type(self.samplet.type())
             for j in range(len(eig_values)):
-                infow = infow + torch.log2(1 + (
-                        (vv + (1 + g * g) * self.sigma_nsq) * ss *
-                        eig_values[j, 0] + self.sigma_nsq * vv) / (
-                                                   self.sigma_nsq *
-                                                   self.sigma_nsq))
+                infow = infow + torch.log2(
+                    1
+                    + ((vv + (1 + g * g) * self.sigma_nsq) * ss * eig_values[j, 0] + self.sigma_nsq * vv)
+                    / (self.sigma_nsq * self.sigma_nsq)
+                )
             infow[infow < tol] = 0
             iw_map[scale] = infow
 
@@ -263,14 +255,12 @@ class IW_SSIM():
                 if s < self.Nsc:
                     iw = iw_map[s]
                     if self.bound1 != 0:
-                        iw = iw[:, :, int(self.bound1): -int(self.bound1),
-                             int(self.bound1): -int(self.bound1)]
+                        iw = iw[:, :, int(self.bound1) : -int(self.bound1), int(self.bound1) : -int(self.bound1)]
                     else:
-                        iw = iw[:, :, int(self.bound1):, int(self.bound1):]
+                        iw = iw[:, :, int(self.bound1) :, int(self.bound1) :]
                 else:
                     iw = torch.ones(cs.shape).type(self.samplet.type())
-                Image.fromarray((iw.squeeze().float().cpu().numpy() *
-                                 255).astype(np.uint8)).show()
+                Image.fromarray((iw.squeeze().float().cpu().numpy() * 255).astype(np.uint8)).show()
                 wmcs.append(torch.sum(cs * iw) / torch.sum(iw))
             else:
                 wmcs.append(torch.mean(cs))
@@ -299,14 +289,12 @@ class IW_SSIM():
                 if s < self.Nsc:
                     iw = iw_map[s]
                     if self.bound1 != 0:
-                        iw = iw[:, :, int(self.bound1): -int(self.bound1),
-                             int(self.bound1): -int(self.bound1)]
+                        iw = iw[:, :, int(self.bound1) : -int(self.bound1), int(self.bound1) : -int(self.bound1)]
                     else:
-                        iw = iw[:, :, int(self.bound1):, int(self.bound1):]
+                        iw = iw[:, :, int(self.bound1) :, int(self.bound1) :]
                 else:
                     iw = torch.ones(cs.shape).type(self.samplet.type())
-                Image.fromarray((iw.squeeze().float().cpu().numpy() *
-                                 255).astype(np.uint8)).show()
+                Image.fromarray((iw.squeeze().float().cpu().numpy() * 255).astype(np.uint8)).show()
                 wmcs.append(torch.sum(cs * iw) / torch.sum(iw))
             else:
                 wmcs.append(torch.mean(cs))
@@ -318,8 +306,8 @@ class IW_SSIM():
         return score
 
 
-if __name__ == '__main__':
-    pred = np.asarray(Image.open(''))
+if __name__ == "__main__":
+    pred = np.asarray(Image.open(""))
     gt = np.asarray(Image.open(""))
     iw_ssim = IW_SSIM()
     iw_score = iw_ssim.test(pred, gt)  # test one image

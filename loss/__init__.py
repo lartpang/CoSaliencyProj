@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from loss.CEs.BCELoss import cal_bce_loss
 from loss.IOUs.IOULoss import cal_iou_loss, cal_weighted_iou_loss
 from loss.LPs.L12Loss import cal_mae_loss, cal_mse_loss

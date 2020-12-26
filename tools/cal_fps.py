@@ -8,10 +8,10 @@ from pprint import pprint
 
 import torch
 from better_config import arg_config, backbone_config, proj_root
-from data.load_rgb import create_loader
 from tqdm import tqdm
 
 import network as network_lib
+from data.load_rgb import create_loader
 from utils.misc import construct_print, initialize_seed_cudnn
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

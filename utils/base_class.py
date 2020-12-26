@@ -5,10 +5,7 @@
 
 import torch.nn as nn
 
-from backbone.origin.from_origin import (
-    Backbone_R101_Custumed,
-    Backbone_R50_Custumed,
-)
+from backbone.origin.from_origin import Backbone_R50_Custumed, Backbone_R101_Custumed
 from utils.misc import construct_print
 
 
@@ -28,10 +25,10 @@ class BasicEncoder(nn.Module):
 class BaseModel(nn.Module):
     def __init__(self, backbone_info: dict):
         super(BaseModel, self).__init__()
-        self.pretrain_path = backbone_info.get('pretrain_path')
+        self.pretrain_path = backbone_info.get("pretrain_path")
 
-        if backbone_info['backbone'] == 'resnet':
-            depth = backbone_info['backbone_cfg'].get('depth', 50)
+        if backbone_info["backbone"] == "resnet":
+            depth = backbone_info["backbone_cfg"].get("depth", 50)
             assert depth in [50, 101]
             if depth == 101:
                 resnet = Backbone_R101_Custumed
@@ -41,7 +38,7 @@ class BaseModel(nn.Module):
         else:
             raise NotImplementedError
 
-        if backbone_info['freeze_bn']:
+        if backbone_info["freeze_bn"]:
             self.freeze_bn()
 
     def freeze_bn(self):

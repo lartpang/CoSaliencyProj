@@ -24,11 +24,9 @@ def cal_weighted_iou_loss(seg_logits, seg_gts):
     gt_cpu = seg_gts.detach().cpu().squeeze().numpy()
     for g in gt_cpu:
         fore_region = distance_transform_edt(g)
-        fore_region = (fore_region - fore_region.min()) / \
-                      (fore_region.max() - fore_region.min())
+        fore_region = (fore_region - fore_region.min()) / (fore_region.max() - fore_region.min())
         back_region = distance_transform_edt(1 - g)
-        back_region = (back_region - back_region.min()) / \
-                      (back_region.max() - back_region.min())
+        back_region = (back_region - back_region.min()) / (back_region.max() - back_region.min())
         edge_weight = 1 - (fore_region + back_region)
         # mmcv.imshow((edge_weight * 255).astype(np.uint8), 'edge')
         # exit()

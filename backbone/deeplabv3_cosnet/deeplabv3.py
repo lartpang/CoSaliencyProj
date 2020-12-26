@@ -63,9 +63,7 @@ class Bottleneck(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, dilation=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(
-            inplanes, planes, kernel_size=1, stride=stride, bias=False
-        )  # change
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)  # change
         self.bn1 = nn.BatchNorm2d(planes, affine=affine_par)
         padding = dilation
         self.conv2 = nn.Conv2d(
@@ -155,9 +153,7 @@ class ASPP(nn.Module):
                 m.bias.data.zero_()
 
     def _make_stage_(self, dilation1, padding1):
-        Conv = nn.Conv2d(
-            2048, 256, kernel_size=3, stride=1, padding=padding1, dilation=dilation1, bias=True
-        )
+        Conv = nn.Conv2d(2048, 256, kernel_size=3, stride=1, padding=padding1, dilation=dilation1, bias=True)
         Bn = nn.BatchNorm2d(256)
         Relu = nn.ReLU(inplace=True)
         return nn.Sequential(Conv, Bn, Relu)
@@ -168,9 +164,7 @@ class ASPP(nn.Module):
         image_features = self.conv(image_features)
         image_features = self.bn_x(image_features)
         image_features = self.relu(image_features)
-        image_features = F.interpolate(
-            image_features, size=size, mode="bilinear", align_corners=True
-        )
+        image_features = F.interpolate(image_features, size=size, mode="bilinear", align_corners=True)
         out_0 = self.conv2d_0(x)
         out_0 = self.bn_0(out_0)
         out_0 = self.relu(out_0)
@@ -216,12 +210,7 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1):
         downsample = None
-        if (
-            stride != 1
-            or self.inplanes != planes * block.expansion
-            or dilation == 2
-            or dilation == 4
-        ):
+        if stride != 1 or self.inplanes != planes * block.expansion or dilation == 2 or dilation == 4:
             downsample = nn.Sequential(
                 nn.Conv2d(
                     self.inplanes,
@@ -235,9 +224,7 @@ class ResNet(nn.Module):
         for i in downsample._modules["1"].parameters():
             i.requires_grad = False
         layers = []
-        layers.append(
-            block(self.inplanes, planes, stride, dilation=dilation, downsample=downsample)
-        )
+        layers.append(block(self.inplanes, planes, stride, dilation=dilation, downsample=downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, dilation=dilation))
